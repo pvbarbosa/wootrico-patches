@@ -184,14 +184,21 @@ fi
 echo -e "  ${GREEN}Imagem criada: $IMAGE_NAME${NC}"
 
 # Atualizar servicos com verificacao de erro
-echo "  Atualizando servico wootrico_app..."
-docker service update --image "$IMAGE_NAME" wootrico_app 2>&1 | tail -5 || {
+#
+# IMPORTANTE: Usamos --force para garantir que o Swarm recrie os containers.
+# Sem o --force, se a tag da imagem for a mesma (ex: "premium"), o Swarm
+# pode nao reiniciar os containers porque o node do servico ja esta rodando
+# com aquela tag. Isso faz com que os patches fiquem apenas no arquivo em
+# disco, mas o processo Node.js continua usando as funcoes antigas em memoria
+# (modulos cacheados). O --force força a recriacao do container.
+echo "  Atualizando servico wootrico_app (--force)..."
+docker service update --force --image "$IMAGE_NAME" wootrico_app 2>&1 | tail -5 || {
   echo -e "${RED}ERRO: Falha ao atualizar servico wootrico_app${NC}"
   exit 1
 }
 
-echo "  Atualizando servico wootrico_worker..."
-docker service update --image "$IMAGE_NAME" wootrico_worker 2>&1 | tail -5 || {
+echo "  Atualizando servico wootrico_worker (--force)..."
+docker service update --force --image "$IMAGE_NAME" wootrico_worker 2>&1 | tail -5 || {
   echo -e "${RED}ERRO: Falha ao atualizar servico wootrico_worker${NC}"
   exit 1
 }

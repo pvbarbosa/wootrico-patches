@@ -85,10 +85,25 @@ docker exec $DB_CID psql -U postgres -d wootrico -c "
 # 7. Commit da imagem
 docker commit $CID_WORKER ericoautomacao/wootrico-v2:premium
 
-# 8. Atualizar serviços
-docker service update --image ericoautomacao/wootrico-v2:premium wootrico_app
-docker service update --image ericoautomacao/wootrico-v2:premium wootrico_worker
+# 8. Atualizar serviços (use --force!)
+docker service update --force --image ericoautomacao/wootrico-v2:premium wootrico_app
+docker service update --force --image ericoautomacao/wootrico-v2:premium wootrico_worker
 ```
+
+### 🔄 Por que --force é essencial?
+
+Os patches são aplicados nos **arquivos JS compilados** dentro do container. Porém, o **Node.js cacheia os módulos em memória** quando o processo inicia. Se você apenas atualizar o serviço sem `--force`:
+
+1. ✅ Arquivo no disco é patcheado corretamente
+2. ❌ Processo Node.js CONTINUA usando as funções antigas em memória
+3. ❌ A verificação de licença ainda acontece com o código original
+
+Com `--force`:
+1. ✅ Container é destruído e recriado
+2. ✅ Node.js carrega o arquivo patcheado do disco
+3. ✅ Patches entram em vigor
+
+> ⚠️ **IMPORTANTE**: Sempre use `--force` no `docker service update` após aplicar patches! Caso contrário, o Swarm pode não reiniciar os containers se a tag da imagem for a mesma.
 
 ## ✅ Verificação
 
